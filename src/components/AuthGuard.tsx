@@ -13,7 +13,7 @@ interface AuthGuardProps {
 const AuthGuard: React.FC<AuthGuardProps> = ({ children, onLogout }) => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -23,14 +23,16 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, onLogout }) => {
         try {
           // Force refresh the token to get the latest claims
           const tokenResult = await user.getIdTokenResult(true);
-          console.log('User token claims:', tokenResult.claims);
-          setIsAdmin(tokenResult.claims.admin === true);
+          const userRole = tokenResult.claims.role || null;
+          console.log('AuthGuard: user:', user.email, 'role:', userRole, 'claims:', tokenResult.claims);
+          setRole(userRole);
         } catch (error) {
           console.error('Error getting user claims:', error);
-          setIsAdmin(false);
+          setRole(null);
         }
       } else {
-        setIsAdmin(false);
+        console.log('AuthGuard: No user');
+        setRole(null);
       }
       
       setLoading(false);
@@ -78,7 +80,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, onLogout }) => {
     );
   }
 
-  if (!isAdmin) {
+  if (!role) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md bg-white/80 backdrop-blur-sm border-0 shadow-2xl">
@@ -88,7 +90,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, onLogout }) => {
             </div>
             <CardTitle className="text-xl text-gray-800">Access Denied</CardTitle>
             <p className="text-gray-600">
-              You don't have admin privileges. Please contact your administrator.
+              Your account does not have a valid role. Please contact your administrator.
             </p>
           </CardHeader>
           <CardContent className="text-center">
@@ -113,12 +115,13 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, onLogout }) => {
         <div className="flex items-center gap-4 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-2xl shadow-lg border border-gray-200/50">
           <div className="text-sm text-gray-600">
             Signed in as: <span className="font-medium text-gray-800">{user.email}</span>
+            <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">{role}</span>
           </div>
           <Button 
             onClick={handleLogout} 
             variant="outline" 
             size="sm"
-            className="bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300"
+            className="bg-slate-200 text-black  hover:bg-gray-50 border-gray-200 hover:border-gray-300"
           >
             <LogOut className="w-4 h-4 mr-2" />
             Logout
@@ -126,7 +129,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, onLogout }) => {
         </div>
       </div>
       
-      {children}
+      {React.cloneElement(children as React.ReactElement, { user, role })}
     </div>
   );
 };

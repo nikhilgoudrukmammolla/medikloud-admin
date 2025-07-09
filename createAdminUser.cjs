@@ -6,7 +6,7 @@ admin.initializeApp({
 });
 
 // Admin user credentials
-const adminEmail = "admin@medikloud.com";
+const adminEmail = "nikhilgoud2002@gmail.com";
 const adminPassword = "Admin123!";
 
 async function createAdminUser() {

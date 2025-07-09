@@ -10,14 +10,18 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@fastify/cors": "^11.0.1",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@tailwindcss/vite": "^4.1.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "fastify": "^5.4.0",
     "firebase": "^11.10.0",
+    "firebase-admin": "^13.4.0",
     "lucide-react": "^0.525.0",
+    "nodemailer": "^7.0.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.59.0",
