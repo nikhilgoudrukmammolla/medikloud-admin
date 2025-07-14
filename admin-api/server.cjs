@@ -1,8 +1,15 @@
+require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
 console.log('Admin API server starting...');
+console.log('Current working directory:', process.cwd());
+console.log('All env variables:', Object.keys(process.env).filter(key => key.includes('FIREBASE')));
+console.log('FIREBASE_SERVICE_ACCOUNT_KEY exists:', !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+console.log('FIREBASE_SERVICE_ACCOUNT_KEY length:', process.env.FIREBASE_SERVICE_ACCOUNT_KEY?.length || 0);
 const Fastify = require('fastify');
 const cors = require('@fastify/cors');
 const admin = require('firebase-admin');
-const serviceAccount = require('../serviceAccountKey.json');
+// Use service account from env variable
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 const { sendWelcomeEmail, sendVerificationEmail } = require('./emailService');
 
 admin.initializeApp({
@@ -124,6 +131,41 @@ fastify.post('/users', async (request, reply) => {
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
       // Don't fail the user creation if email fails
+    }
+
+    // Create notification for superAdmin users about new user creation
+    try {
+      // Get all superAdmin users
+      const superAdminUsers = await admin.firestore()
+        .collection('users')
+        .where('role', '==', 'superAdmin')
+        .get();
+
+      // Create notification for each superAdmin user
+      const notificationPromises = superAdminUsers.docs.map(async (adminDoc) => {
+        const notificationData = {
+          title: 'New User Created',
+          message: `New user ${email} has been created with role: ${role}`,
+          type: 'user',
+          newUserEmail: email,
+          newUserRole: role,
+          read: false,
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Add to superAdmin's personal notifications subcollection
+        return admin.firestore()
+          .collection('users')
+          .doc(adminDoc.id)
+          .collection('notifications')
+          .add(notificationData);
+      });
+
+      await Promise.all(notificationPromises);
+      console.log(`[NOTIFICATION] User creation notifications created for ${superAdminUsers.docs.length} superAdmin users`);
+    } catch (notificationError) {
+      console.error('[NOTIFICATION ERROR] Failed to create user notification:', notificationError);
+      // Don't fail the user creation if notification fails
     }
     
     reply.send({ 

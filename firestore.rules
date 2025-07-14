@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can read/write their own user document and subcollections
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /addresses/{addressId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /orders/{orderId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /cart/{cartId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /notifications/{notificationId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Admins collection: only admins and superAdmins can read/write any admin doc
+    match /admins/{adminId} {
+      allow read, write: if request.auth.token.role in ['admin', 'superAdmin'];
+    }
+
+    // Agents collection: only admins and superAdmins can read/write any agent doc
+    match /agents/{agentId} {
+      allow read, write: if request.auth.token.role in ['admin', 'superAdmin'];
+    }
+
+    // Superadmins collection: only superAdmins can read/write any superadmin doc
+    match /superadmins/{superAdminId} {
+      allow read, write: if request.auth.token.role == 'superAdmin';
+    }
+
+    // Top-level orders collection (admin/superAdmin access)
+    match /orders/{orderId} {
+      allow read, write: if request.auth.token.role in ['admin', 'superAdmin'];
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+    
+    // User level order collection
+		match /users/{userId}/orders/{orderId} {
+ 			 allow read, write: if request.auth != null && (
+    	 request.auth.token.role in ['admin', 'superAdmin', 'agent']
+  );
+}
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

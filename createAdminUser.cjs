@@ -1,13 +1,14 @@
+require('dotenv').config();
 const admin = require("firebase-admin");
-const serviceAccount = require("./serviceAccountKey.json");
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-// Admin user credentials
-const adminEmail = "nikhilgoud2002@gmail.com";
-const adminPassword = "Admin123!";
+// Get email and password from command line arguments or use defaults
+const adminEmail = process.argv[2] || "nikhilgoud2002@gmail.com";
+const adminPassword = process.argv[3] || "Admin123!";
 
 async function createAdminUser() {
   try {
@@ -20,8 +21,12 @@ async function createAdminUser() {
 
     console.log("Admin user created successfully:", userRecord.uid);
 
-    // Set admin custom claim
-    await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
+    // Set admin custom claim with force password change
+    await admin.auth().setCustomUserClaims(userRecord.uid, { 
+      role: 'admin',
+      forcePasswordChange: true,
+      accountCreated: new Date().toISOString()
+    });
     console.log("Admin claim set successfully");
 
     console.log("\n=== Admin User Created ===");
@@ -38,8 +43,12 @@ async function createAdminUser() {
         // Get the existing user
         const userRecord = await admin.auth().getUserByEmail(adminEmail);
         
-        // Set admin custom claim
-        await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
+        // Set admin custom claim with force password change
+        await admin.auth().setCustomUserClaims(userRecord.uid, { 
+          role: 'admin',
+          forcePasswordChange: true,
+          accountCreated: new Date().toISOString()
+        });
         console.log("Admin claim set successfully for existing user");
         
         console.log("\n=== Admin User Info ===");
